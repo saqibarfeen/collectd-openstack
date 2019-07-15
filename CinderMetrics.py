@@ -31,7 +31,7 @@ class CinderMetrics:
         self._project_domain_id = project_domain_id
         self._user_domain_id = user_domain_id
 
-        self.auth = identity.Password(
+        self.auth = identity.v3.Password(
             auth_url=self._auth_url,
             username=self._username,
             password=self._password,
