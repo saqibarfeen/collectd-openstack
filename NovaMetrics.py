@@ -260,10 +260,13 @@ class NovaMetrics:
             if prop == "flavor":
                 tmpValue = getattr(server, "flavor", None)
                 if tmpValue is not None:
-                    flavor = self.nova.flavors.get(tmpValue["id"])
-                    flavorName = getattr(flavor, "name", None)
-                    if flavorName is not None:
-                        propValue = flavorName
+                  try:    
+                      flavor = self.nova.flavors.get(tmpValue["id"])
+                      flavorName = getattr(flavor, "name", None)
+                      if flavorName is not None:
+                          propValue = flavorName
+                  except Exception as e:
+		      propValue = 'NotFound' 
             else:
                 propValue = getattr(server, prop, None)
 
