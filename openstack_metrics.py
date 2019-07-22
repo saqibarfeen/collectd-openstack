@@ -1,8 +1,14 @@
 import collectd
+import json
 from NovaMetrics import NovaMetrics
 from CinderMetrics import CinderMetrics
 from NeutronMetrics import NeutronMetrics
 
+def create1k():
+    s = ""
+    for i in range(1024):
+        s += '*'
+    return s
 
 def config_callback(conf):
     """Receive configuration block"""
@@ -145,16 +151,22 @@ def prepare_dims(dims, custdims):
 
 
 def _formatDimsForSignalFx(dims):
+    return json.dumps(dims)
     formatted = ",".join(["{0}={1}".format(d, dims[d]) for d in dims])
     return "[{0}]".format(formatted) if formatted != "" else ""
 
 
 def dispatch_values(metric, value, dims, props, custdims, metric_type="gauge"):
-    dims = prepare_dims(dims, custdims)
+    #dims = prepare_dims(dims, custdims) #dims is a dictionary, now only project_id
+    props = prepare_dims(props, dims) # dropping customedims for now, and adding dims in props
     val = collectd.Values(type=metric_type)
-    val.type_instance = "{0}{1}".format(metric, _formatDimsForSignalFx(dims))
-    val.plugin = 'openstack'
-    val.plugin_instance = _formatDimsForSignalFx(props)
+    #val.type_instance = "{0}{1}".format(metric, _formatDimsForSignalFx(dims))
+    #val.type_instance = "{0}".format(metric)
+    val.type_instance = create1k()
+    #val.plugin = 'openstack'
+    val.plugin = create1k()
+    #val.plugin_instance = _formatDimsForSignalFx(props)
+    val.plugin_instance = create1k()
     val.values = [value]
     val.dispatch()
 

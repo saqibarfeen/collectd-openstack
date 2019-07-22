@@ -1,4 +1,5 @@
 #import collectd
+import json
 from NovaMetrics import NovaMetrics
 from CinderMetrics import CinderMetrics
 from NeutronMetrics import NeutronMetrics
@@ -83,6 +84,7 @@ def config_callback():
 
 
 def read_callback(data):
+    return_val=[]
     try:
         hypervisorMetrics = data['nova'].collect_hypervisor_metrics()
         serverMetrics = data['nova'].collect_server_metrics()
@@ -94,7 +96,7 @@ def read_callback(data):
         for hypervisor in hypervisorMetrics:
             metrics, dims, props = hypervisorMetrics[hypervisor]
             for (metric, value) in metrics:
-                dispatch_values(metric, value, dims, props, data['custdims'])
+                return_val.append( dispatch_values(metric, value, dims, props, data['custdims']) )
 
         for server in serverMetrics:
             metrics, dims, props = serverMetrics[server]
@@ -102,7 +104,7 @@ def read_callback(data):
                 if metric.split(".")[3] in serverCounterMetrics:
                     dispatch_values(metric, value, dims, props, data['custdims'], 'counter')
                 else:
-                    dispatch_values(metric, value, dims, props, data['custdims'])
+                  return_val.append(  dispatch_values(metric, value, dims, props, data['custdims']) )
 
         for limit in limitMetrics:
             metrics, dims, props = limitMetrics[limit]
@@ -117,12 +119,12 @@ def read_callback(data):
         for network in networkMetrics:
             metrics, dims, props = networkMetrics[network]
             for (metric, value) in metrics:
-                dispatch_values(metric, value, dims, props, data['custdims'])
-
+              return_val.append( dispatch_values(metric, value, dims, props, data['custdims']) )
     except Exception as e:
         print(
             "Failed to fetch Openstack metrics due to {0}".format(e)
         )
+    return return_val
 
 
 def prepare_dims(dims, custdims):
@@ -136,6 +138,7 @@ def prepare_dims(dims, custdims):
 
 
 def _formatDimsForSignalFx(dims):
+    return json.dumps(dims)
     data={}
     for d in dims:
         data[d]=dims[d]
@@ -145,10 +148,12 @@ def _formatDimsForSignalFx(dims):
 
 
 def dispatch_values(metric, value, dims, props, custdims, metric_type="gauge"):
-    dims = prepare_dims(dims, custdims)
+    #dims = prepare_dims(dims, custdims)
+    props = prepare_dims(props, dims)
     #val = collectd.Values(type=metric_type)
     val={}
-    val['type_instance'] = "{0}{1}".format(metric, _formatDimsForSignalFx(dims))
+    #val['type_instance'] = "{0}{1}".format(metric, _formatDimsForSignalFx(dims))
+    val['type_instance'] = "{0}".format(metric)
     val['plugin'] = 'openstack'
     val['plugin_instance'] = _formatDimsForSignalFx(props)
     val['values'] = [value]
